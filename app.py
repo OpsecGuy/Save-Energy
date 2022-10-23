@@ -40,7 +40,7 @@ def quit_to_irl():
         gui.dpg.set_value('time_left_number', time_left)
         
         if time_elapsed >= gui.dpg.get_value('i_time_to_finish'):
-            os.system("shutdown /s /t 1")
+            os.system("shutdown /s")
             os._exit(1)
         time.sleep(1)
     
