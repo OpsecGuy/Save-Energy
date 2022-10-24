@@ -31,7 +31,7 @@ def kill_process():
             return True
         time.sleep(1)
 
-def quit_to_irl():
+def shutdown():
     time_elapsed = 0
     
     while True:
@@ -49,7 +49,7 @@ def gui_callback():
         if gui.dpg.is_item_clicked('b_process_kill'):
             kill_process()
         elif gui.dpg.is_item_clicked('b_shutdown'):
-            quit_to_irl()
+            shutdown()
         time.sleep(0.01)
 
 def main():
