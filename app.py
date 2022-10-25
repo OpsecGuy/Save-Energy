@@ -1,8 +1,8 @@
 ###              ###
 ### RUN AS ADMIN ###
 ###              ###
-import gui
 import psutil, os, signal, time, threading
+import gui
 
 process_list = []
 
@@ -29,7 +29,7 @@ def kill_process():
             os.kill(gui.dpg.get_value('i_process_id'), signal.SIGTERM)
             gui.dpg.configure_item('l_process_list', items=get_processes())
             return True
-        time.sleep(1)
+        time.sleep(0)
 
 def shutdown():
     time_elapsed = 0
@@ -41,7 +41,7 @@ def shutdown():
         
         if time_elapsed >= gui.dpg.get_value('i_time_to_finish'):
             os.system("shutdown /s")
-            os._exit(1)
+            os._exit(0)
         time.sleep(1)
     
 def gui_callback():
@@ -54,8 +54,8 @@ def gui_callback():
 
 def main():
     gui.init_gui()
-    threading.Thread(target=gui_callback, name='gui_callback').start()
-    threading.Thread(target=gui.make_interactive, name='make_interactive').start()
+    threading.Thread(target=gui_callback, name='gui_callback', daemon=True).start()
+    threading.Thread(target=gui.make_interactive, name='make_interactive', daemon=True).start()
     
     gui.dpg.start_dearpygui()
     

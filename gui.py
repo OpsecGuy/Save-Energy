@@ -20,14 +20,14 @@ def init_gui():
             dpg.add_button(label='60 min', tag='time_60')
             dpg.add_button(label='3 h', tag='time_3')
         with dpg.group(horizontal=True):
-            dpg.add_text('Not set yet!', tag='time_left_number')
+            dpg.add_text('Not set yet!', tag='time_left_number', color=[255,0,0])
             dpg.add_text('Time Left (sec)', tag='time_left')
         dpg.add_button(label='Refresh List', tag='b_process_list')
         dpg.add_listbox(app.get_processes(), tag='l_process_list', width=x2-15, num_items=8)
         dpg.add_button(label='KILL!', tag='b_process_kill', width=x2-15, height=40)
         dpg.add_button(label='Shutdown', tag='b_shutdown', width=x2-15, height=40)
     dpg.show_viewport()
-
+    
 def make_interactive():
     try:
         while True:
@@ -62,7 +62,7 @@ def get_pid_from_list():
         c = dpg.get_value('l_process_list')
         a = c.split(',')
         f = a[0].removeprefix('[')
-        
         return int(f)
     except Exception as err:
-        pass
+        print('Failed to parse PID')
+        app.os._exit(0)
