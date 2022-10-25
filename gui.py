@@ -11,8 +11,8 @@ def init_gui():
     dpg.setup_dearpygui()
     
     with dpg.window(tag='w_main', width=x2, height=y2, no_move=True, no_title_bar=True):
-        dpg.add_input_int(label='PID', tag='i_process_id', enabled=False, readonly=True)
-        dpg.add_input_int(label='Timer (sec)', tag='i_time_to_finish')
+        dpg.add_input_int(label='PID', tag='i_process_id', default_value=0, min_value=0, enabled=False, readonly=True)
+        dpg.add_input_int(label='Timer (sec)', tag='i_time_to_finish', default_value=0, min_value=0)
         
         with dpg.group(horizontal=True):
             dpg.add_button(label='5 min', tag='time_5')
@@ -21,7 +21,7 @@ def init_gui():
             dpg.add_button(label='3 h', tag='time_3')
         with dpg.group(horizontal=True):
             dpg.add_text('Not set yet!', tag='time_left_number', color=[255,0,0])
-            dpg.add_text('Time Left (sec)', tag='time_left')
+            dpg.add_text('Second(s) left', tag='time_left')
         dpg.add_button(label='Refresh List', tag='b_process_list')
         dpg.add_listbox(app.get_processes(), tag='l_process_list', width=x2-15, num_items=8)
         dpg.add_button(label='KILL!', tag='b_process_kill', width=x2-15, height=40)
@@ -32,6 +32,11 @@ def make_interactive():
     try:
         while True:
             dpg.set_value('i_process_id', get_pid_from_list())
+            
+            if dpg.get_value('i_time_to_finish') <= 0:
+                dpg.configure_item(item='time_left_number', show=False)
+            else:
+                dpg.configure_item(item='time_left_number', show=True)
             
             # Update process list. Could make it dynamic.
             if dpg.is_item_clicked('b_process_list'):
