@@ -1,73 +1,154 @@
 import dearpygui.dearpygui as dpg
-import app
+import threading
+import psutil
+import signal
+import time
+import os
 
-def init_gui():
-    x1 = 380
-    y1 = 450
-    x2 = 370
-    y2 = 445
-    dpg.create_context()
-    dpg.create_viewport(title='SaveEnergy', width=x1, height=y1, min_width=x1, min_height=y1)
-    dpg.setup_dearpygui()
-    
-    with dpg.window(tag='w_main', width=x2, height=y2, no_move=True, no_title_bar=True):
-        dpg.add_input_int(label='PID', tag='i_process_id', default_value=0, min_value=0, enabled=False, readonly=True)
-        dpg.add_input_int(label='Timer (sec)', tag='i_time_to_finish', default_value=0, min_value=0)
-        
-        with dpg.group(horizontal=True):
-            dpg.add_button(label='5 min', tag='time_5')
-            dpg.add_button(label='30 min', tag='time_30')
-            dpg.add_button(label='60 min', tag='time_60')
-            dpg.add_button(label='3 h', tag='time_3')
-        with dpg.group(horizontal=True):
-            dpg.add_text('Not set yet!', tag='time_left_number', color=[255,0,0])
-            dpg.add_text('Second(s) left', tag='time_left')
-        dpg.add_button(label='Refresh List', tag='b_process_list')
-        dpg.add_listbox(app.get_processes(), tag='l_process_list', width=x2-15, num_items=8)
-        dpg.add_button(label='KILL!', tag='b_process_kill', width=x2-15, height=40)
-        dpg.add_button(label='Shutdown', tag='b_shutdown', width=x2-15, height=40)
-    dpg.show_viewport()
-    
-def make_interactive():
-    try:
+class Window():
+    """Manage visual interface"""
+
+    def __init__(self) -> None:
+        """
+        Window initialization
+        """
+        print('Window initialization started.')
+        self.process_list = []
+
+    def create(self) -> None:
+        """
+        Creates window context.
+        """
+        dpg.create_context()
+        with dpg.window(
+            label='Window',
+            width=400,
+            height=500,
+            no_title_bar=True,
+            no_resize=True,
+            no_move=True,
+            tag='w_main'):
+
+            with dpg.tab_bar(label="Menu"):
+                with dpg.tab(label="Main"):
+                    dpg.add_button(label='Refresh List',
+                                width=100,
+                                height=20,
+                                tag='b_refresh',
+                                callback=lambda: dpg.configure_item(item='l_process_list',
+                                                                    items=self.get_processes()))
+                    with dpg.group(horizontal=True):
+                        dpg.add_listbox(items=self.get_processes(),
+                                        num_items=10,
+                                        width=200,
+                                        tag='l_process_list')
+                        with dpg.group(horizontal=False):
+                            dpg.add_button(label='Kill Process',
+                                        tag='b_kill',
+                                        callback=self.kill_process)
+
+                            dpg.add_radio_button(items=['None' ,'+ Shutdown', '+ Hibernate'], default_value='None', tag='r_options')
+
+                    dpg.add_separator()
+                    dpg.add_input_int(label='Time To Wait',
+                                      tag='i_wait_time')
+
+                    with dpg.group(horizontal=True):
+                        dpg.add_text('ETA:')
+                        dpg.add_text('0',
+                                    tag='t_timer')
+
+    def update(self) -> None:
+        """
+        Keeps GUI updated.
+        """
         while True:
-            dpg.set_value('i_process_id', get_pid_from_list())
+            # Resizable
+            vp_width = dpg.get_viewport_width()
+            vp_height = dpg.get_viewport_height()
+            dpg.configure_item(item='w_main', width=vp_width - 5)
+            dpg.configure_item(item='w_main', height=vp_height - 5)
             
-            if dpg.get_value('i_time_to_finish') <= 0:
-                dpg.configure_item(item='time_left_number', show=False)
-            else:
-                dpg.configure_item(item='time_left_number', show=True)
-            
-            # Update process list. Could make it dynamic.
-            if dpg.is_item_clicked('b_process_list'):
-                dpg.configure_item('l_process_list', items=app.get_processes())
-            
-            if dpg.is_item_clicked('time_5'):
-                dpg.set_value('i_time_to_finish', 300)
-                dpg.set_value('time_left_number', '300')
-            elif dpg.is_item_clicked('time_30'):
-                dpg.set_value('i_time_to_finish', 1800)
-                dpg.set_value('time_left_number', '1800')
-            elif dpg.is_item_clicked('time_60'):
-                dpg.set_value('i_time_to_finish', 3600)
-                dpg.set_value('time_left_number', '3600')
-            elif dpg.is_item_clicked('time_3'):
-                dpg.set_value('i_time_to_finish', 10800)
-                dpg.set_value('time_left_number', '10800')
-            
-            dpg.set_item_width('w_main', dpg.get_viewport_width()-15)
-            dpg.set_item_height('w_main', dpg.get_viewport_height())
-            app.time.sleep(0.001)
-    
-    except Exception as err:
-        print(err)
+            time.sleep(0.001)
 
-def get_pid_from_list():
-    try:
-        c = dpg.get_value('l_process_list')
-        a = c.split(',')
-        f = a[0].removeprefix('[')
-        return int(f)
-    except Exception as err:
-        print('Failed to parse PID')
-        app.os._exit(0)
+    def run(self) -> None:
+        """
+        Execute/Start window thread.
+        """
+        self.custom_themes()
+        dpg.create_viewport(
+            title=f'Save Energy v1.1',
+            height=500,
+            width=400,
+            resizable=True,
+            vsync=True)
+
+        dpg.bind_theme('base_theme')
+        dpg.setup_dearpygui()
+        dpg.show_viewport()
+        dpg.start_dearpygui()
+
+    def custom_themes(self) -> None:
+        dpg.add_theme(tag='base_theme')
+
+        with dpg.theme_component(parent='base_theme'):
+            dpg.add_theme_style(dpg.mvStyleVar_WindowRounding, 9)
+            dpg.add_theme_style(dpg.mvStyleVar_ChildRounding, 9)
+            dpg.add_theme_style(dpg.mvStyleVar_FrameRounding, 9)
+            dpg.add_theme_style(dpg.mvStyleVar_GrabRounding, 9)
+            dpg.add_theme_style(dpg.mvStyleVar_TabRounding, 7)
+            dpg.add_theme_style(dpg.mvStyleVar_ScrollbarSize, 13)
+            dpg.add_theme_color(dpg.mvThemeCol_HeaderHovered,(0, 170, 50, 130))
+            dpg.add_theme_color(dpg.mvThemeCol_HeaderActive,(0, 170, 50, 130))
+            dpg.add_theme_color(dpg.mvThemeCol_CheckMark, (0, 255, 0))
+            dpg.add_theme_color(dpg.mvThemeCol_ButtonActive,(0, 170, 50, 130))
+
+    def destroy(self) -> None:
+        """
+        Destroys window context.
+        """
+        dpg.destroy_context()
+
+    def get_processes(self):
+        try:
+            self.process_list.clear()
+            # Iterating through all the running processes
+            for process in list(psutil.process_iter()):
+                self.process_list.append([process.pid, process.name()])
+            return self.process_list
+        except Exception as err:
+            print(err)
+
+    def get_pid_from_list(self):
+        try:
+            data = dpg.get_value('l_process_list')
+            data = data.split(',')
+            return int(data[0].removeprefix('['))
+        except Exception as err:
+            print('Failed to parse PID')
+            
+    def kill_process(self):
+        time_elapsed = 0
+        pid = self.get_pid_from_list()
+        total_wait_time = dpg.get_value('i_wait_time')
+        add_option = dpg.get_value('r_additional')
+        
+        while True:
+            time_elapsed += 1
+            time_left = total_wait_time - time_elapsed
+            dpg.set_value('t_timer', time_left)
+
+            if time_left == 0:
+                os.kill(pid, signal.SIGTERM)
+                if add_option == '+ Shutdown':
+                    os.system('shutdown /s /f /t 0')
+                    break
+                elif add_option == '+ Hibernate':
+                    os.system('shutdown /h')
+                    break
+                else:
+                    pass
+
+                dpg.configure_item('l_process_list', items=self.get_processes())
+                return
+            time.sleep(1)
