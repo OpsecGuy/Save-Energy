@@ -63,12 +63,14 @@ class Window():
         Keeps GUI updated.
         """
         while True:
-            # Resizable
-            vp_width = dpg.get_viewport_width()
-            vp_height = dpg.get_viewport_height()
-            dpg.configure_item(item='w_main', width=vp_width - 5)
-            dpg.configure_item(item='w_main', height=vp_height - 5)
-            
+            try:
+                # Resizable
+                vp_width = dpg.get_viewport_width()
+                vp_height = dpg.get_viewport_height()
+                dpg.configure_item(item='w_main', width=vp_width - 5)
+                dpg.configure_item(item='w_main', height=vp_height - 5)
+            except Exception as err:
+                print(err)
             time.sleep(0.001)
 
     def run(self) -> None:
@@ -86,6 +88,7 @@ class Window():
         dpg.bind_theme('base_theme')
         dpg.setup_dearpygui()
         dpg.show_viewport()
+        threading.Thread(target=self.update, name='make_interactive', daemon=True).start()
         dpg.start_dearpygui()
 
     def custom_themes(self) -> None:
@@ -142,10 +145,8 @@ class Window():
                 os.kill(pid, signal.SIGTERM)
                 if add_option == '+ Shutdown':
                     os.system('shutdown /s /f /t 0')
-                    break
                 elif add_option == '+ Hibernate':
                     os.system('shutdown /h')
-                    break
                 else:
                     pass
 
